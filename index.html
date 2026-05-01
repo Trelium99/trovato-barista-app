@@ -250,7 +250,7 @@ body::after {
         <div class="pulse-ring"></div>
       </div>
       <span class="bell">🔔</span>
-      <span class="btn-label">Call Barista</span>
+      <span class="btn-label" id="btnLabel">Call Barista</span>
     </button>
   </div>
   <p class="hint">Tap once — we'll be right with you</p>
@@ -439,7 +439,18 @@ async function callBarista() {
   } catch(e) {
     showToast('Network error — please try again', 'error');
   }
-  setTimeout(() => { cooldown = false; document.getElementById('callBtn').style.pointerEvents = ''; }, 8000);
+  const COOLDOWN = 120000;
+  const interval = setInterval(() => {
+    const remaining = Math.ceil((COOLDOWN - (Date.now() - startTime)) / 1000);
+    if (remaining > 0) {
+      document.getElementById('btnLabel').textContent = `Wait ${remaining}s`;
+    } else {
+      clearInterval(interval);
+      document.getElementById('btnLabel').textContent = 'Call Barista';
+    }
+  }, 1000);
+  const startTime = Date.now();
+  setTimeout(() => { cooldown = false; document.getElementById('callBtn').style.pointerEvents = ''; clearInterval(interval); document.getElementById('btnLabel').textContent = 'Call Barista'; }, COOLDOWN);
 }
 
 // ── Toast ──
