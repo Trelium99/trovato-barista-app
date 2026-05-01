@@ -427,9 +427,10 @@ async function callBarista() {
       method: 'POST',
       body: cfg.message,
       headers: {
-        'Title': 'Barista Needed ☕',
+        'Content-Type': 'text/plain',
+        'Title': 'Barista Needed',
         'Priority': 'high',
-        'Tags': 'bell,coffee'
+        'Tags': 'bell'
       }
     });
     res.ok
