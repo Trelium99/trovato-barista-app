@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Call Barista</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0d0d;
+  --surface: #161616;
+  --border: rgba(255,255,255,0.07);
+  --gold: #d4a843;
+  --gold-dim: rgba(212,168,67,0.15);
+  --gold-glow: rgba(212,168,67,0.35);
+  --text: #f0ece0;
+  --muted: rgba(240,236,224,0.4);
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--text);
+}
+body::before {
+  content: '';
+  position: fixed;
+  width: 700px; height: 700px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(212,168,67,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+
+/* ── KIOSK ── */
+.kiosk {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 32px; padding: 48px 24px; text-align: center;
+  animation: fadeUp 0.7s ease both;
+}
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(24px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.wordmark { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.wordmark-top { font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); font-weight: 500; }
+.wordmark h1 { font-family: 'DM Serif Display', serif; font-size: clamp(2.4rem, 6vw, 3.8rem); color: var(--text); line-height: 1; }
+.wordmark h1 em { font-style: italic; color: var(--gold); }
+
+/* ── CALL BUTTON ── */
+.btn-wrap { position: relative; display: flex; align-items: center; justify-content: center; margin: 8px 0; }
+.orbit {
+  position: absolute; border-radius: 50%;
+  border: 1px solid rgba(212,168,67,0.12);
+  pointer-events: none; animation: spin 20s linear infinite;
+}
+.orbit-1 { width: 290px; height: 290px; }
+.orbit-2 { width: 340px; height: 340px; animation-direction: reverse; animation-duration: 30s; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.orbit-1::before, .orbit-2::before {
+  content: ''; position: absolute;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--gold); opacity: 0.5;
+  top: -2.5px; left: 50%; transform: translateX(-50%);
+}
+.call-btn {
+  position: relative;
+  width: clamp(200px, 42vw, 260px); height: clamp(200px, 42vw, 260px);
+  border-radius: 50%; border: none; cursor: pointer;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--border), 0 0 60px var(--gold-glow), inset 0 1px 0 rgba(255,255,255,0.06);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  -webkit-tap-highlight-color: transparent; user-select: none; overflow: hidden;
+}
+.call-btn::before { content: ''; position: absolute; inset: 14px; border-radius: 50%; border: 1px solid rgba(212,168,67,0.18); }
+.call-btn::after  { content: ''; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, var(--gold-dim) 0%, transparent 70%); opacity: 0; transition: opacity 0.2s; }
+.call-btn:active  { transform: scale(0.94); box-shadow: 0 0 0 1px rgba(212,168,67,0.3), 0 0 90px var(--gold-glow), inset 0 1px 0 rgba(255,255,255,0.06); }
+.call-btn:active::after { opacity: 1; }
+.call-btn:active .bell { animation: bellRing 0.5s ease; }
+.bell { font-size: clamp(3rem, 8vw, 4rem); line-height: 1; position: relative; z-index: 1; filter: drop-shadow(0 0 12px rgba(212,168,67,0.5)); }
+@keyframes bellRing {
+  0%  { transform: rotate(0); } 15% { transform: rotate(-22deg); }
+  35% { transform: rotate(20deg); } 55% { transform: rotate(-14deg); }
+  75% { transform: rotate(9deg); } 100% { transform: rotate(0); }
+}
+.btn-label { font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); font-weight: 500; position: relative; z-index: 1; }
+.hint { font-size: 0.8rem; color: var(--muted); font-weight: 300; letter-spacing: 0.04em; }
+
+/* ── PULSE ── */
+.pulse-wrap { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
+.pulse-ring { position: absolute; inset: 0; border-radius: 50%; border: 1px solid rgba(212,168,67,0.25); animation: pulseOut 3.5s ease-out infinite; }
+.pulse-ring:nth-child(2) { animation-delay: 1.15s; }
+.pulse-ring:nth-child(3) { animation-delay: 2.3s; }
+@keyframes pulseOut { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.65); opacity: 0; } }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 44px; left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: #1a1a1a; border: 1px solid var(--border); color: var(--text);
+  padding: 13px 26px; border-radius: 100px; font-size: 0.88rem;
+  opacity: 0; pointer-events: none; white-space: nowrap;
+  transition: opacity 0.28s ease, transform 0.28s ease;
+  z-index: 200; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.toast.show    { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { border-color: rgba(212,168,67,0.4); color: var(--gold); }
+.toast.error   { border-color: rgba(192,57,43,0.4); color: #e07060; }
+
+/* ── SETUP BUTTON ── */
+.setup-btn {
+  position: fixed; bottom: 20px; right: 20px;
+  background: none; border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 14px; color: var(--muted);
+  font-family: 'DM Sans', sans-serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase;
+  cursor: pointer; z-index: 5; transition: border-color 0.2s, color 0.2s;
+}
+.setup-btn:hover { border-color: rgba(212,168,67,0.3); color: var(--gold); }
+
+/* ── SHARED OVERLAY ── */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.82); backdrop-filter: blur(8px);
+  z-index: 50; align-items: center; justify-content: center; padding: 20px;
+}
+.overlay.open { display: flex; }
+@keyframes modalIn {
+  from { opacity:0; transform: scale(0.95) translateY(14px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-10px); } 40% { transform: translateX(10px); }
+  60% { transform: translateX(-7px); }  80% { transform: translateX(7px); }
+}
+
+/* ── PIN CARD ── */
+.pin-card {
+  background: #111; border: 1px solid var(--border); border-radius: 24px;
+  padding: 36px 32px 28px; width: min(320px, 92vw);
+  display: flex; flex-direction: column; align-items: center; gap: 24px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+  animation: modalIn 0.22s ease both;
+}
+.pin-title { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: var(--text); text-align: center; }
+.pin-subtitle { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-top: -16px; }
+.pin-dots { display: flex; gap: 14px; }
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 1.5px solid rgba(212,168,67,0.35); background: transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.pin-dot.filled { background: var(--gold); border-color: var(--gold); }
+.pin-dot.error  { background: #c0392b; border-color: #c0392b; }
+.numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+.num-btn {
+  aspect-ratio: 1; border-radius: 14px; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.03); color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 1.3rem;
+  cursor: pointer; transition: background 0.12s, border-color 0.12s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  display: flex; align-items: center; justify-content: center;
+}
+.num-btn:active { background: var(--gold-dim); border-color: rgba(212,168,67,0.4); transform: scale(0.92); }
+.num-btn.del { font-size: 1rem; color: var(--muted); }
+.num-btn.empty { visibility: hidden; pointer-events: none; }
+.pin-cancel { background: none; border: none; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; padding: 4px 12px; }
+
+/* ── SETUP MODAL ── */
+.modal {
+  background: #111; border: 1px solid var(--border); border-radius: 20px;
+  width: min(440px, 100%); max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6); animation: modalIn 0.25s ease both;
+}
+.modal-header { padding: 28px 28px 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.modal-header h2 { font-family: 'DM Serif Display', serif; font-size: 1.5rem; color: var(--text); }
+.modal-close {
+  background: none; border: 1px solid var(--border); border-radius: 8px;
+  width: 32px; height: 32px; color: var(--muted); cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.modal-close:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+
+.modal-body { padding: 24px 28px 28px; display: flex; flex-direction: column; gap: 14px; }
+
+.panel-desc {
+  font-size: 0.82rem; color: var(--muted); line-height: 1.7;
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.03); border-radius: 10px; border-left: 2px solid var(--gold);
+}
+.panel-desc code { font-size: 0.75rem; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px; }
+
+.field { display: flex; flex-direction: column; gap: 7px; }
+.field label { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.field input {
+  width: 100%; padding: 11px 14px;
+  background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px;
+  color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.88rem; outline: none;
+  transition: border-color 0.2s;
+}
+.field input:focus { border-color: rgba(212,168,67,0.5); }
+.field input::placeholder { color: rgba(240,236,224,0.2); }
+
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+.btn-primary {
+  background: var(--gold); color: #0d0d0d; border: none; border-radius: 10px;
+  padding: 11px 24px; font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 0.85rem;
+  cursor: pointer; transition: opacity 0.2s;
+}
+.btn-primary:hover { opacity: 0.85; }
+.btn-secondary {
+  background: none; border: 1px solid var(--border); border-radius: 10px;
+  padding: 11px 18px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; cursor: pointer;
+}
+
+.divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+
+.change-pin-row { display: flex; align-items: flex-end; gap: 12px; }
+.change-pin-row .field { flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- KIOSK -->
+<div class="kiosk">
+  <div class="wordmark">
+    <span class="wordmark-top">Welcome</span>
+    <h1>Need a <em>Barista?</em></h1>
+  </div>
+  <div class="btn-wrap">
+    <div class="orbit orbit-1"></div>
+    <div class="orbit orbit-2"></div>
+    <button class="call-btn" id="callBtn" onclick="callBarista()">
+      <div class="pulse-wrap">
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
+      </div>
+      <span class="bell">🔔</span>
+      <span class="btn-label">Call Barista</span>
+    </button>
+  </div>
+  <p class="hint">Tap once — we'll be right with you</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- SETUP BUTTON -->
+<button class="setup-btn" onclick="openPinOverlay()">⚙ Setup</button>
+
+<!-- PIN OVERLAY -->
+<div class="overlay" id="pinOverlay">
+  <div class="pin-card" id="pinCard">
+    <div>
+      <p class="pin-title">Staff Only</p>
+      <p class="pin-subtitle">Enter 4-digit PIN</p>
+    </div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="numpad">
+      <button class="num-btn" onclick="pinPress('1')">1</button>
+      <button class="num-btn" onclick="pinPress('2')">2</button>
+      <button class="num-btn" onclick="pinPress('3')">3</button>
+      <button class="num-btn" onclick="pinPress('4')">4</button>
+      <button class="num-btn" onclick="pinPress('5')">5</button>
+      <button class="num-btn" onclick="pinPress('6')">6</button>
+      <button class="num-btn" onclick="pinPress('7')">7</button>
+      <button class="num-btn" onclick="pinPress('8')">8</button>
+      <button class="num-btn" onclick="pinPress('9')">9</button>
+      <button class="num-btn empty"></button>
+      <button class="num-btn" onclick="pinPress('0')">0</button>
+      <button class="num-btn del" onclick="pinDel()">⌫</button>
+    </div>
+    <button class="pin-cancel" onclick="closePinOverlay()">Cancel</button>
+  </div>
+</div>
+
+<!-- SETUP MODAL -->
+<div class="overlay" id="setupOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Telegram Setup</h2>
+      <button class="modal-close" onclick="closeSetupModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <p class="panel-desc">
+        1. Open Telegram → message <strong>@BotFather</strong> → send <code>/newbot</code><br>
+        2. Copy the <strong>Bot Token</strong> BotFather gives you<br>
+        3. Send your bot a message, then visit:<br>
+        <code>api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code><br>
+        4. Find <code>"chat":{"id": 123456}</code> — that's your Chat ID
+      </p>
+
+      <div class="field">
+        <label>Bot Token</label>
+        <input type="text" id="tg-token" placeholder="7482910345:AAFxxxxxxxxxxxxx" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Chat ID</label>
+        <input type="text" id="tg-chatid" placeholder="123456789" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Notification Message</label>
+        <input type="text" id="tg-msg" placeholder="🔔 Customer waiting at the counter!">
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeSetupModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveConfig()">Save & Activate</button>
+      </div>
+
+      <hr class="divider">
+
+      <div class="change-pin-row">
+        <div class="field">
+          <label>Change PIN</label>
+          <input type="password" id="new-pin" maxlength="4" placeholder="New 4-digit PIN" inputmode="numeric" pattern="[0-9]*">
+        </div>
+        <button class="btn-secondary" onclick="changePin()">Update PIN</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+let cfg = JSON.parse(localStorage.getItem('barista_cfg') || 'null') || {};
+let cooldown = false;
+const DEFAULT_PIN = '1234';
+let pinBuffer = '';
+
+// ── PIN ──
+function openPinOverlay() {
+  pinBuffer = '';
+  renderDots();
+  document.getElementById('pinOverlay').classList.add('open');
+}
+function closePinOverlay() {
+  pinBuffer = '';
+  renderDots();
+  document.getElementById('pinOverlay').classList.remove('open');
+}
+function pinPress(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  renderDots();
+  if (pinBuffer.length === 4) setTimeout(checkPin, 150);
+}
+function pinDel() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  renderDots();
+}
+function renderDots(state) {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('d' + i);
+    d.className = 'pin-dot';
+    if (state === 'error') d.classList.add('error');
+    else if (i < pinBuffer.length) d.classList.add('filled');
+  }
+}
+function checkPin() {
+  const saved = localStorage.getItem('barista_pin') || DEFAULT_PIN;
+  if (pinBuffer === saved) {
+    closePinOverlay();
+    openSetupModal();
+  } else {
+    renderDots('error');
+    const card = document.getElementById('pinCard');
+    card.style.animation = 'shake 0.4s ease';
+    setTimeout(() => { card.style.animation = ''; pinBuffer = ''; renderDots(); }, 450);
+  }
+}
+
+// ── Setup Modal ──
+function openSetupModal() {
+  document.getElementById('tg-token').value  = cfg.token   || '';
+  document.getElementById('tg-chatid').value = cfg.chatId  || '';
+  document.getElementById('tg-msg').value    = cfg.message || '';
+  document.getElementById('setupOverlay').classList.add('open');
+}
+function closeSetupModal() {
+  document.getElementById('setupOverlay').classList.remove('open');
+}
+
+// ── Save ──
+function saveConfig() {
+  const token  = document.getElementById('tg-token').value.trim();
+  const chatId = document.getElementById('tg-chatid').value.trim();
+  if (!token || !chatId) { showToast('Bot Token and Chat ID are required', 'error'); return; }
+  cfg = {
+    token,
+    chatId,
+    message: document.getElementById('tg-msg').value.trim() || '🔔 Customer waiting at the counter!'
+  };
+  localStorage.setItem('barista_cfg', JSON.stringify(cfg));
+  closeSetupModal();
+  showToast('✓ Telegram configured!', 'success');
+}
+
+function changePin() {
+  const val = document.getElementById('new-pin').value.trim();
+  if (!/^\d{4}$/.test(val)) { showToast('PIN must be exactly 4 digits', 'error'); return; }
+  localStorage.setItem('barista_pin', val);
+  document.getElementById('new-pin').value = '';
+  showToast('✓ PIN updated', 'success');
+}
+
+// ── Call Barista ──
+async function callBarista() {
+  if (cooldown) return;
+  if (!cfg.token || !cfg.chatId) { showToast('⚙ Not configured yet — tap Setup', 'error'); return; }
+  cooldown = true;
+  document.getElementById('callBtn').style.pointerEvents = 'none';
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${cfg.token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: cfg.chatId, text: cfg.message })
+    });
+    const data = await res.json();
+    data.ok
+      ? showToast("✓ Barista notified — we'll be right with you!", 'success')
+      : showToast('Could not notify — check your Telegram setup', 'error');
+  } catch(e) {
+    showToast('Network error — please try again', 'error');
+  }
+  setTimeout(() => { cooldown = false; document.getElementById('callBtn').style.pointerEvents = ''; }, 8000);
+}
+
+// ── Toast ──
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + type;
+  setTimeout(() => { t.className = 'toast'; }, 3500);
+}
+</script>
+</body>
+</html>
