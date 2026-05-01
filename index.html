@@ -199,16 +199,13 @@ body::after {
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .modal-close:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
-
 .modal-body { padding: 24px 28px 28px; display: flex; flex-direction: column; gap: 14px; }
-
 .panel-desc {
   font-size: 0.82rem; color: var(--muted); line-height: 1.7;
   padding: 14px 16px;
   background: rgba(255,255,255,0.03); border-radius: 10px; border-left: 2px solid var(--gold);
 }
 .panel-desc code { font-size: 0.75rem; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px; }
-
 .field { display: flex; flex-direction: column; gap: 7px; }
 .field label { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 .field input {
@@ -219,7 +216,6 @@ body::after {
 }
 .field input:focus { border-color: rgba(212,168,67,0.5); }
 .field input::placeholder { color: rgba(240,236,224,0.2); }
-
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
 .btn-primary {
   background: var(--gold); color: #0d0d0d; border: none; border-radius: 10px;
@@ -231,9 +227,7 @@ body::after {
   background: none; border: 1px solid var(--border); border-radius: 10px;
   padding: 11px 18px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; cursor: pointer;
 }
-
 .divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
-
 .change-pin-row { display: flex; align-items: flex-end; gap: 12px; }
 .change-pin-row .field { flex: 1; }
 </style>
@@ -302,30 +296,26 @@ body::after {
 <div class="overlay" id="setupOverlay">
   <div class="modal">
     <div class="modal-header">
-      <h2>Telegram Setup</h2>
+      <h2>ntfy Setup</h2>
       <button class="modal-close" onclick="closeSetupModal()">✕</button>
     </div>
     <div class="modal-body">
 
       <p class="panel-desc">
-        1. Open Telegram → message <strong>@BotFather</strong> → send <code>/newbot</code><br>
-        2. Copy the <strong>Bot Token</strong> BotFather gives you<br>
-        3. Send your bot a message, then visit:<br>
-        <code>api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code><br>
-        4. Find <code>"chat":{"id": 123456}</code> — that's your Chat ID
+        1. Install the free <strong>ntfy</strong> app on every barista's phone<br>
+        2. In the app tap <strong>Subscribe to topic</strong><br>
+        3. Enter the same topic name you set below<br><br>
+        Make the topic hard to guess — e.g. <code>cafebell-x7f2</code><br>
+        No account needed. Completely free.
       </p>
 
       <div class="field">
-        <label>Bot Token</label>
-        <input type="text" id="tg-token" placeholder="7482910345:AAFxxxxxxxxxxxxx" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Chat ID</label>
-        <input type="text" id="tg-chatid" placeholder="123456789" autocomplete="off">
+        <label>Topic Name</label>
+        <input type="text" id="ntfy-topic" placeholder="cafebell-x7f2" autocomplete="off" spellcheck="false">
       </div>
       <div class="field">
         <label>Notification Message</label>
-        <input type="text" id="tg-msg" placeholder="🔔 Customer waiting at the counter!">
+        <input type="text" id="ntfy-msg" placeholder="Customer waiting at the counter ☕">
       </div>
 
       <div class="modal-actions">
@@ -397,9 +387,8 @@ function checkPin() {
 
 // ── Setup Modal ──
 function openSetupModal() {
-  document.getElementById('tg-token').value  = cfg.token   || '';
-  document.getElementById('tg-chatid').value = cfg.chatId  || '';
-  document.getElementById('tg-msg').value    = cfg.message || '';
+  document.getElementById('ntfy-topic').value = cfg.topic   || '';
+  document.getElementById('ntfy-msg').value   = cfg.message || '';
   document.getElementById('setupOverlay').classList.add('open');
 }
 function closeSetupModal() {
@@ -408,17 +397,15 @@ function closeSetupModal() {
 
 // ── Save ──
 function saveConfig() {
-  const token  = document.getElementById('tg-token').value.trim();
-  const chatId = document.getElementById('tg-chatid').value.trim();
-  if (!token || !chatId) { showToast('Bot Token and Chat ID are required', 'error'); return; }
+  const topic = document.getElementById('ntfy-topic').value.trim();
+  if (!topic) { showToast('Please enter a topic name', 'error'); return; }
   cfg = {
-    token,
-    chatId,
-    message: document.getElementById('tg-msg').value.trim() || '🔔 Customer waiting at the counter!'
+    topic,
+    message: document.getElementById('ntfy-msg').value.trim() || 'Customer waiting at the counter ☕'
   };
   localStorage.setItem('barista_cfg', JSON.stringify(cfg));
   closeSetupModal();
-  showToast('✓ Telegram configured!', 'success');
+  showToast('✓ ntfy configured!', 'success');
 }
 
 function changePin() {
@@ -432,19 +419,22 @@ function changePin() {
 // ── Call Barista ──
 async function callBarista() {
   if (cooldown) return;
-  if (!cfg.token || !cfg.chatId) { showToast('⚙ Not configured yet — tap Setup', 'error'); return; }
+  if (!cfg.topic) { showToast('⚙ Not configured yet — tap Setup', 'error'); return; }
   cooldown = true;
   document.getElementById('callBtn').style.pointerEvents = 'none';
   try {
-    const res = await fetch(`https://api.telegram.org/bot${cfg.token}/sendMessage`, {
+    const res = await fetch(`https://ntfy.sh/${cfg.topic}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: cfg.chatId, text: cfg.message })
+      body: cfg.message,
+      headers: {
+        'Title': 'Barista Needed ☕',
+        'Priority': 'high',
+        'Tags': 'bell,coffee'
+      }
     });
-    const data = await res.json();
-    data.ok
+    res.ok
       ? showToast("✓ Barista notified — we'll be right with you!", 'success')
-      : showToast('Could not notify — check your Telegram setup', 'error');
+      : showToast('Could not notify — check your topic name', 'error');
   } catch(e) {
     showToast('Network error — please try again', 'error');
   }
